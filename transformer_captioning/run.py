@@ -1,4 +1,5 @@
 
+import argparse
 import torch
 from utils import * 
 from torch.utils.data import DataLoader
@@ -6,8 +7,17 @@ from trainer import Trainer
 from transformer import TransformerDecoder
 from matplotlib import pyplot as plt
 
+# the three settings from the README (and the swiglu run) without editing the file each time
+parser = argparse.ArgumentParser()
+parser.add_argument('--exp_name', default='case1')
+parser.add_argument('--num_heads', type=int, default=2)
+parser.add_argument('--num_layers', type=int, default=2)
+parser.add_argument('--lr', type=float, default=1e-4)
+parser.add_argument('--activation', default='relu', choices=['relu', 'swiglu'])
+args = parser.parse_args()
+
 set_all_seeds(42) ### DO NOT CHANGE THIS LINE
-exp_name = 'case1'
+exp_name = args.exp_name
 
 train_dataset = CocoDataset(load_coco_data(max_train=1024), 'train')
 train_dataloader =  DataLoader(train_dataset, batch_size=64)
@@ -16,25 +26,27 @@ val_dataset = CocoDataset(load_coco_data(max_val = 1024), 'val')
 val_dataloader =  DataLoader(val_dataset, batch_size=64)
 
 
-device = 'cuda'
+device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
 transformer = TransformerDecoder(
           word_to_idx=train_dataset.data['word_to_idx'],
           idx_to_word = train_dataset.data['idx_to_word'],
           input_dim=train_dataset.data['train_features'].shape[1],
           embed_dim=256,
-          num_heads=2,
-          num_layers=2,
+          num_heads=args.num_heads,
+          num_layers=args.num_layers,
           max_length=30,
-          device = device
+          device = device,
+          activation=args.activation,
         )
 
 trainer = Trainer(transformer, train_dataloader, val_dataloader,
           num_epochs=100,
-          learning_rate=1e-4,
+          learning_rate=args.lr,
           device = device
         )
 
 trainer.train()
+print('final train loss: %.4f   min train loss: %.4f' % (trainer.loss_history[-1], min(trainer.loss_history)))
 
 # Plot the training losses.
 plt.plot(trainer.loss_history)

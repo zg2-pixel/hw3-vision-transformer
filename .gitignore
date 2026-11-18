@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.DS_Store
+transformer_captioning/datasets/coco_captioning/
+transformer_captioning/datasets/*.zip
+transformer_captioning/plots/
+vit_classification/data/
+vit_classification/checkpoints/
+*.pth
+*.png
+assignment_3/
+assignment_3_*.pdf
